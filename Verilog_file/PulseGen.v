@@ -26,15 +26,60 @@ module PulseGen(
     reg [3:0] mem_control_state = 0;
     reg [31:0] prev_mem_val = 0;
 
-    // Data Table
-    reg [31:0] float_data [0:4];
+    // Neutron Pulse Data Table
+    reg [31:0] float_data [0:49];
 
     initial begin
-        float_data[0] = 32'h3DCCCCCD; // 0.1
-        float_data[1] = 32'h3E4CCCCD; // 0.2
-        float_data[2] = 32'h3E99999A; // 0.3
-        float_data[3] = 32'h3ECCCCCD; // 0.4
-        float_data[4] = 32'h3F000000; // 0.5
+        float_data[0] = 32'h3DA339C1; // 0.0797
+        float_data[1] = 32'h3F59AD43; // 0.8503
+        float_data[2] = 32'h3F73A29C; // 0.9517
+        float_data[3] = 32'h3F652546; // 0.8951
+        float_data[4] = 32'h3F4EC56D; // 0.8077
+        float_data[5] = 32'h3F388CE7; // 0.7209
+        float_data[6] = 32'h3F242C3D; // 0.6413
+        float_data[7] = 32'h3F11EB85; // 0.57
+        float_data[8] = 32'h3F01A9FC; // 0.5065
+        float_data[9] = 32'h3EE67382; // 0.4501
+        float_data[10] = 32'h3ECCBFB1; // 0.3999
+        float_data[11] = 32'h3EB5F6FD; // 0.3554
+        float_data[12] = 32'h3EA1B08A; // 0.3158
+        float_data[13] = 32'h3E8FAACE; // 0.2806
+        float_data[14] = 32'h3E7F4880; // 0.2493
+        float_data[15] = 32'h3E62D0E5; // 0.2215
+        float_data[16] = 32'h3E4985F0; // 0.1968
+        float_data[17] = 32'h3E3318FC; // 0.1749
+        float_data[18] = 32'h3E1F212D; // 0.1554
+        float_data[19] = 32'h3E0D6A16; // 0.1381
+        float_data[20] = 32'h3DFB4A23; // 0.1227
+        float_data[21] = 32'h3DDF3B64; // 0.109
+        float_data[22] = 32'h3DC67382; // 0.0969
+        float_data[23] = 32'h3DB05532; // 0.0861
+        float_data[24] = 32'h3D9CAC08; // 0.0765
+        float_data[25] = 32'h3D8B4396; // 0.068
+        float_data[26] = 32'h3D7765FE; // 0.0604
+        float_data[27] = 32'h3D5B8BAC; // 0.0536
+        float_data[28] = 32'h3D436113; // 0.0477
+        float_data[29] = 32'h3D2DAB9F; // 0.0424
+        float_data[30] = 32'h3D1A0275; // 0.0376
+        float_data[31] = 32'h3D08CE70; // 0.0334
+        float_data[32] = 32'h3CF34D6A; // 0.0297
+        float_data[33] = 32'h3CD844D0; // 0.0264
+        float_data[34] = 32'h3CC08312; // 0.0235
+        float_data[35] = 32'h3CAA64C3; // 0.0208
+        float_data[36] = 32'h3C978D50; // 0.0185
+        float_data[37] = 32'h3C872B02; // 0.0165
+        float_data[38] = 32'h3C6F34D7; // 0.0146
+        float_data[39] = 32'h3C54FDF4; // 0.013
+        float_data[40] = 32'h3C3C6A7F; // 0.0115
+        float_data[41] = 32'h3C28C155; // 0.0103
+        float_data[42] = 32'h3C15182B; // 0.0091
+        float_data[43] = 32'h3C04B5DD; // 0.0081
+        float_data[44] = 32'h3BEBEDFA; // 0.0072
+        float_data[45] = 32'h3BD1B717; // 0.0064
+        float_data[46] = 32'h3BBAC711; // 0.0057
+        float_data[47] = 32'h3BA3D70A; // 0.005
+        float_data[48] = 32'h3B9374BC; // 0.0045
+        float_data[49] = 32'h3B83126F; // 0.004
     end
 
     wire [31:0] fp_add_result;
@@ -100,8 +145,8 @@ module PulseGen(
                     mem_control_state <= 1;
 
                 end else begin
-                    if (mem_count > 5) begin
-                        // 메모리 카운트가 5 이상이면 펄스 종료
+                    if (mem_count > 50) begin
+                        // 메모리 카운트가 50 이상이면 펄스 종료
                         bram_we_pulse <= 0;             // 펄스 종료
                         ena_pulse <= 0;                 // 비활성화
                         mem_count <= 0;                 // 메모리 카운트 초기화
