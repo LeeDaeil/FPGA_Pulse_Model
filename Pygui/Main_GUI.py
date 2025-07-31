@@ -1,4 +1,6 @@
 import sys
+import socket
+import struct
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -7,8 +9,10 @@ from pyqtgraph.graphicsItems.GridItem import GridItem
 from pyqtgraph import LabelItem
 import pyqtgraph as pg
 import math
+import time
 
 VAULT_SIZE = 40  # 볼트 크기
+
 
 class CustomPushButton(QPushButton):
     def __init__(self, text):
@@ -173,6 +177,64 @@ class CustomGrid(GridItem):
         else:
             nice = 10
         return nice * (10 ** exp)
+
+class TCPClient(QThread):
+    received = pyqtSignal(str)
+    data_received = pyqtSignal(bytes)
+    server_state = pyqtSignal(bool)
+    
+    def __init__(self):
+        super().__init__()
+        self.host = '192.168.1.10'   # 보드 IP 주소로 변경
+        self.port = 7                # 보드 포트
+        self.client_socket = None
+        self.running = True
+        self.tcp_run = False
+        self.prev_val = "0"
+        
+    def run(self):
+        try:
+            if self.client_socket is None:
+                self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.client_socket.connect((self.host, self.port))
+            
+                # 연결 상태 신호 전송
+                self.server_state.emit(True)
+                print(f"Connected to {self.host}:{self.port}")
+            while self.running:
+                if self.tcp_run:
+                    self.client_socket.sendall("0".encode())
+                    data = self.client_socket.recv(10240)
+                    self.client_socket.sendall(self.prev_val.encode())
+                    data = self.client_socket.recv(10240)
+                    
+                    time.sleep(2)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
+                    
+                    if data:
+                        # print(f"Data Len : {len(data)}")
+                        self.data_received.emit(data)
+                    else:
+                        print("No data received, closing connection.")
+                else:
+                    pass
+        except Exception as e:
+            self.received.emit(f"Connection error: {e}")
+            self.server_state.emit(False)
+    
+    def send_message(self, message):
+        if self.client_socket:
+            self.client_socket.sendall(message.encode())
+            self.prev_val = message
+            print(f"Sent message: {message}")
+
+    def change_tcp_model_run(self, state):
+        self.tcp_run = state
+
+    def stop(self):
+        self.running = False
+        if self.client_socket:
+            self.client_socket.close()
+        self.quit()
     
 class MainWidget(QWidget):
     def __init__(self):
@@ -182,6 +244,8 @@ class MainWidget(QWidget):
         
         self.sim_state = False  # 시뮬레이션 상태 초기화
         self.net_state = False  # 네트워크 상태 초기화
+        
+        self.client_thread = None
 
     def initUI(self):
         # 창 크기 설정
@@ -440,23 +504,28 @@ class MainWidget(QWidget):
             self.grid_item = CustomGrid()
             view_box.addItem(self.grid_item)
             
-            # 기존 x, y 값
-            x = [0, 1, 1.01, 2, 3, 4, 4.01,   5, 6, 7, 7.01,   8, 9]
-            y = [0, 1, 0,   0, 0, 2, 0,     0, 0, 1, 0,        0, 0]
+            # # 기존 x, y 값
+            # x = [0, 1, 1.01, 2, 3, 4, 4.01,   5, 6, 7, 7.01,   8, 9]
+            # y = [0, 1, 0,   0, 0, 2, 0,     0, 0, 1, 0,        0, 0]
             
-            def to_pulse_shape(x, y):
-                """x, y 데이터를 펄스(계단형)로 변환"""
-                x_pulse = []
-                y_pulse = []
-                for i in range(len(x) - 1):
-                    x_pulse.extend([x[i], x[i+1]])
-                    y_pulse.extend([y[i], y[i]])
-                return x_pulse, y_pulse
+            # def to_pulse_shape(x, y):
+            #     """x, y 데이터를 펄스(계단형)로 변환"""
+            #     x_pulse = []
+            #     y_pulse = []
+            #     for i in range(len(x) - 1):
+            #         x_pulse.extend([x[i], x[i+1]])
+            #         y_pulse.extend([y[i], y[i]])
+            #     return x_pulse, y_pulse
             
-            # 계단형으로 변환
-            x_pulse, y_pulse = to_pulse_shape(x, y)
+            # # 계단형으로 변환
+            # x_pulse, y_pulse = to_pulse_shape(x, y)
+            # self.plot_widget.plot(x_pulse, y_pulse, pen=pg.mkPen(color='white', width=2))
             
-            self.plot_widget.plot(x_pulse, y_pulse, pen=pg.mkPen(color='white', width=2))
+            # 실시간 그래프 그리용            
+            self.x_start = 0
+            self.x_data = []
+            self.y_data = []
+            self.plot_curve = self.plot_widget.plot([], [], pen=pg.mkPen(color='white', width=2))
             
             # 4. 패널 내부 Spacer 추가
             panel_in_vbox.addStretch(1)
@@ -481,12 +550,25 @@ class MainWidget(QWidget):
             self.start_btn.set_state(True, self.net_state)
             self.stop_btn.set_state(False, self.net_state)
             self.sim_state = True
+            
+            # Client Thread 시작
+            if self.client_thread is None or not self.client_thread.isRunning():
+                self.client_thread = TCPClient()
+                self.client_thread.received.connect(self.display_client_message)
+                self.client_thread.data_received.connect(self.display_message)
+                self.client_thread.server_state.connect(self.change_server_state)
+                self.client_thread.start()
+            else:
+                print("Client thread is already running.")
+            self.client_thread.change_tcp_model_run(True)  # TCP 클라이언트 스레드 시작
+            
         elif action == "STOP":
             self.start_btn.set_state(False, self.net_state)
             self.stop_btn.set_state(True, self.net_state)
             self.sim_state = False
+            self.client_thread.change_tcp_model_run(False)  # TCP 클라이언트 스레드 중지
         print(f"Simulation state changed to: {self.sim_state}")
-        
+    
     def keypad_action(self, number):
         target_value = int(self.target_cps_value.text())
         new_value = target_value * 10 + number
@@ -537,6 +619,52 @@ class MainWidget(QWidget):
         self.current_cps_value.setText(self.target_cps_value.text())
         self.current_cps_exp_value.setText(self.target_cps_exp_value.text())
         
+        # 2. TCP 서버에 명령 전송
+        if self.client_thread and self.client_thread.isRunning():
+            cmd_str = self.current_cps_value.text()
+            self.client_thread.send_message(cmd_str)
+            print(f"Sent command: {cmd_str} to server")
+    
+    # ========== TCP 서버 통신 및 그래프 업데이트 관련 ================================
+    def display_client_message(self, message):
+        print(f"Received message from client: {message}")
+        
+    def display_message(self, message):
+        PACKET_SIZE = 5
+        for i in range(0, len(message), PACKET_SIZE):
+            segment = message[i:i + PACKET_SIZE]
+            if len(segment) < PACKET_SIZE:
+                print("Incomplete packet detected, skipping.")
+                continue
+            
+            raw_val_0 = segment[0]
+            raw_val_1 = struct.unpack('<f', segment[1:5])[0]
+            # print(f"[{i // PACKET_SIZE}] raw_val_0: {raw_val_0}, raw_val_1: {raw_val_1:.6f}")
+            
+            self.x_data.append(self.x_start)  # 순차적인 인덱스 (또는 timestamp)
+            self.y_data.append(raw_val_1)
+            
+            self.x_start += 20  # x축 간격 (20ns 단위로 증가)
+            
+        # 일정 길이 이상 시 자르기 (예: 500개 유지)
+        MAX_POINTS = 5000
+        if len(self.x_data) > MAX_POINTS:
+            self.x_data = self.x_data[-MAX_POINTS:]
+            self.y_data = self.y_data[-MAX_POINTS:]
+
+        # 그래프 갱신
+        self.plot_curve.setData(self.x_data, self.y_data)
+            
+        # print('Display message completed.')
+        
+    def change_server_state(self, state):
+        print(f"Server state changed: {state}")
+        self.net_state = state
+        
+        self.start_btn.set_state(True, self.net_state)
+        self.stop_btn.set_state(False, self.net_state)
+        self.sim_state = True
+    # ===============================================================================
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
