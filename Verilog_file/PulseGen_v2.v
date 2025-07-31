@@ -17,9 +17,7 @@ module PulseGen(
 
     input wire [31:0] bram_data_out_pulse
 );
-    // reg [9:0] lfsr = 10'b1010101010;  // 10비트 초기값
-    reg [10:0] lfsr = 11'b10101010101;  // 11비트 초기값
-
+    reg [9:0] lfsr = 10'b1010101010;  // 10비트 초기값
     reg [31:0] count = 0;
     reg [31:0] prev_cps = 0;
 
@@ -96,8 +94,8 @@ module PulseGen(
     always @(posedge clk) begin
         if (cps == 0) begin
             bram_addr <= 0;
-            // lfsr <= 10'b1010101010;
-            lfsr <= 11'b10101010101; // 11비트 초기값
+            
+            lfsr <= 10'b1010101010;
             count <= 0;
             prev_cps <= 0;
             bram_we_pin <= 0;
@@ -114,8 +112,7 @@ module PulseGen(
             // cps가 변경되었을 경우 재시작
             if (cps != prev_cps) begin
                 count <= 0;
-                // lfsr <= 10'b1010101010;
-                lfsr <= 11'b10101010101; // 11비트 초기값
+                lfsr <= 10'b1010101010;
                 prev_cps <= cps;
                 ena_pin <= 0;
                 bram_we_pin <= 0;
@@ -128,17 +125,13 @@ module PulseGen(
             end else if (count < cps) begin
                 if (mem_count == 0) begin
                     // 10비트 LFSR: x^10 + x^7 + 1
-                    // lfsr <= {lfsr[8:0], lfsr[9] ^ lfsr[6]};
-
-                    lfsr <= {lfsr[9:0], lfsr[10] ^ lfsr[7]}; // 11비트 LFSR로 변경
+                    lfsr <= {lfsr[8:0], lfsr[9] ^ lfsr[6]};
 
                     bram_data_in <= 1;                    // 펄스 발생 시점 값
-                    // bram_addr <= 32'b100; // lfsr * 4;                // 0 ~ 1023 개 가능
-                    bram_addr <= lfsr * 4;                // 11비트 0 ~ 2047 개 가능
+                    bram_addr <= 32'b100; // lfsr * 4;                // 0 ~ 1023 개 가능
 
                     bram_data_in_pulse <= 1;              // 펄스 값
-                    // bram_addr_pulse <= 32'b100; //lfsr * 4;          // 0 ~ 1023 개 가능
-                    bram_addr_pulse <= lfsr * 4;                // 11비트 0 ~ 2047 개 가능
+                    bram_addr_pulse <= 32'b100; //lfsr * 4;          // 0 ~ 1023 개 가능
 
                     // Pin 메모리에 1 값 쓰기.
                     bram_we_pin <= 1;
