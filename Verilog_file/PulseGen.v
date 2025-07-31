@@ -97,7 +97,8 @@ module PulseGen(
         if (cps == 0) begin
             bram_addr <= 0;
             // lfsr <= 10'b1010101010;
-            lfsr <= 11'b10101010101; // 11비트 초기값
+            // lfsr <= 11'b10101010101; // 11비트 초기값
+            lfsr <= {lfsr[9:0], lfsr[10] ^ lfsr[7]}; // 11비트 LFSR로 변경 (이전 변경 값을 가져다 씀)
             count <= 0;
             prev_cps <= 0;
             bram_we_pin <= 0;
@@ -115,7 +116,9 @@ module PulseGen(
             if (cps != prev_cps) begin
                 count <= 0;
                 // lfsr <= 10'b1010101010;
-                lfsr <= 11'b10101010101; // 11비트 초기값
+                // lfsr <= 11'b10101010101; // 11비트 초기값
+                lfsr <= {lfsr[9:0], lfsr[10] ^ lfsr[7]}; // 11비트 LFSR로 변경 (이전 변경 값을 가져다 씀)
+
                 prev_cps <= cps;
                 ena_pin <= 0;
                 bram_we_pin <= 0;

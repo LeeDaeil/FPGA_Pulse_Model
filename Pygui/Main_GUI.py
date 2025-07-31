@@ -208,7 +208,7 @@ class TCPClient(QThread):
                     self.client_socket.sendall(self.prev_val.encode())
                     data = self.client_socket.recv(10240)
                     
-                    time.sleep(2)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
+                    time.sleep(0.01)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
                     
                     if data:
                         # print(f"Data Len : {len(data)}")
@@ -646,8 +646,8 @@ class MainWidget(QWidget):
             
             self.x_start += 20  # x축 간격 (20ns 단위로 증가)
             
-        # 일정 길이 이상 시 자르기 (예: 500개 유지)
-        MAX_POINTS = 5000
+        # 일정 길이 이상 시 자르기 (예: 10240개 유지)
+        MAX_POINTS = 2048 * 1000
         if len(self.x_data) > MAX_POINTS:
             self.x_data = self.x_data[-MAX_POINTS:]
             self.y_data = self.y_data[-MAX_POINTS:]
