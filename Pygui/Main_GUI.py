@@ -12,7 +12,8 @@ import math
 import time
 import random
 
-VAULT_SIZE = 40  # 볼트 크기
+VAULT_SIZE  = 40    # 볼트 크기
+PLOT_SKIP   = 3     # 그래프 x 포인트 스킵용
 
 
 class CustomPushButton(QPushButton):
@@ -249,21 +250,23 @@ class TCPClient(QThread):
         
     def cps_to_pulse_time_block(self, cps: str, slots_per_chunk=2028, time_per_slot_ns=20):
         x_cps = int(cps)
-        # 청크 시간 (초 단위)
         chunk_time_sec = (slots_per_chunk * time_per_slot_ns) * 1e-9
-        # 펄스 하나 당 청크 수
-        chunks_needed = int(1 / (x_cps * chunk_time_sec))
-        # 최소 청크 수 보장
-        chunks_needed = min(chunks_needed, 100)  # 최대 100 청크로 제한 # 그래프 100개 슬롯임.
-        # 청크 당 펄스 수 계산
-        # Step 1: Initialize 빈 리스트
-        pulses_per_chunk = [0] * chunks_needed
-        # Step 2: 랜덤하게 x_cps개의 펄스를 청크에 분배
-        for _ in range(x_cps):
-            idx = random.randint(0, chunks_needed - 1)
-            pulses_per_chunk[idx] += 1 
-        print('Generated pulse time block:', cps)
-        return pulses_per_chunk
+        nub_chunk = int(1 / chunk_time_sec)
+        if x_cps > 1e+6:
+            divided_chunk = int(nub_chunk/1000)
+            list_chunk = [0] * divided_chunk
+            
+            for _ in range(int(x_cps/1000)):
+                idx = random.randint(0, divided_chunk - 1)
+                list_chunk[idx] += 1
+        else:
+            list_chunk = [0] * nub_chunk
+            
+            for _ in range(x_cps):
+                idx = random.randint(0, nub_chunk - 1)
+                list_chunk[idx] += 1
+        
+        return list_chunk
         
     def calculate_chunks_for_xcps(x_cps, slots_per_chunk=2028, time_per_slot_ns=20):
         # 청크 시간 (초 단위)
@@ -568,8 +571,10 @@ class MainWidget(QWidget):
             
             # 실시간 그래프 그리용            
             self.x_start = 0
+            self.x_skip = 0
             self.x_data = []
             self.y_data = []
+            self.plot_widget.setYRange(-5, 300)
             self.plot_curve = self.plot_widget.plot([], [], pen=pg.mkPen(color='white', width=2))
             
             # 4. 패널 내부 Spacer 추가
@@ -704,10 +709,13 @@ class MainWidget(QWidget):
             raw_val_1 = struct.unpack('<f', segment)[0]
             # print(f"[{i // PACKET_SIZE}] raw_val_0: {raw_val_0}, raw_val_1: {raw_val_1:.6f}")
             
-            self.x_data.append(self.x_start)  # 순차적인 인덱스 (또는 timestamp)
-            self.y_data.append(raw_val_1)
+            if self.x_skip % PLOT_SKIP == 0:
+                # SKIP 고려해서 그래프 저장
+                self.x_data.append(self.x_start)  # 순차적인 인덱스 (또는 timestamp)
+                self.y_data.append(raw_val_1)
             
             self.x_start += 0.00002  # x축 간격 (20ns 단위로 증가)
+            self.x_skip += 1 # skip용.
             
         # 일정 길이 이상 시 자르기 (예: 2048개 유지)
         MAX_POINTS = 2048 * 100 # 4.096 ms 윈도우만 표기.
