@@ -244,6 +244,8 @@ class TCPClient(QThread):
         self.prev_val = cps
         if self.prev_val != "0":
             self.pulse_time_bloack = self.cps_to_pulse_time_block(cps)
+        else:
+            self.pulse_time_bloack = []
         
     def cps_to_pulse_time_block(self, cps: str, slots_per_chunk=2028, time_per_slot_ns=20):
         x_cps = int(cps)
