@@ -10,6 +10,7 @@ from pyqtgraph import LabelItem
 import pyqtgraph as pg
 import math
 import time
+import random
 
 VAULT_SIZE = 40  # 볼트 크기
 
@@ -191,6 +192,7 @@ class TCPClient(QThread):
         self.running = True
         self.tcp_run = False
         self.prev_val = "0"
+        self.pulse_time_bloack = []
         
     def run(self):
         try:
@@ -203,10 +205,22 @@ class TCPClient(QThread):
                 print(f"Connected to {self.host}:{self.port}")
             while self.running:
                 if self.tcp_run:
-                    self.client_socket.sendall("0".encode())
-                    data = self.client_socket.recv(10240)
-                    self.client_socket.sendall(self.prev_val.encode())
-                    data = self.client_socket.recv(10240)
+                    # 1. Read pulse pos data to cps
+                    if len(self.pulse_time_bloack) == 0:
+                        if self.prev_val == "0":
+                            cps = 0
+                        else:
+                            # 펄스 신호 대기열 모두 소진 시 대기열 재생성
+                            self.pulse_time_bloack = self.cps_to_pulse_time_block(self.prev_val)
+                            # 펄스 신호 대기열에서 하나씩 꺼내서 전송
+                            cps = self.pulse_time_bloack.pop(0)
+                    else:
+                        # 펄스 신호 대기열에서 하나씩 꺼내서 전송
+                        cps = self.pulse_time_bloack.pop(0)
+                    
+                    # 2. Send cps
+                    self.client_socket.sendall(str(cps).encode())
+                    data = self.client_socket.recv(8192)
                     
                     time.sleep(0.01)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
                     
@@ -221,11 +235,40 @@ class TCPClient(QThread):
             self.received.emit(f"Connection error: {e}")
             self.server_state.emit(False)
     
-    def send_message(self, message):
-        if self.client_socket:
-            self.client_socket.sendall(message.encode())
-            self.prev_val = message
-            print(f"Sent message: {message}")
+    def send_message(self, cps:str):
+        # 인터페이스에서 CPS 값 받으면, pulse_time_bloack 대기열 생성 및 대체
+        #    - 1개 청크는 2048개 포인트를 가지고 각 포인트는 20 ns 의미한다.
+        #      따라서, 1개 청크가 표현하는 시간 윈도우는 40.56 us 의미한다.
+        #    - 1개 청크는 최소 1개 펄스를 만들 수 있다.
+        #      1 cps 를 표현하기 위해서는 약 24,659개의 청크가 필요하다.
+        self.prev_val = cps
+        if self.prev_val != "0":
+            self.pulse_time_bloack = self.cps_to_pulse_time_block(cps)
+        
+    def cps_to_pulse_time_block(self, cps: str, slots_per_chunk=2028, time_per_slot_ns=20):
+        x_cps = int(cps)
+        # 청크 시간 (초 단위)
+        chunk_time_sec = (slots_per_chunk * time_per_slot_ns) * 1e-9
+        # 펄스 하나 당 청크 수
+        chunks_needed = int(1 / (x_cps * chunk_time_sec))
+        # 최소 청크 수 보장
+        chunks_needed = min(chunks_needed, 100)  # 최대 100 청크로 제한 # 그래프 100개 슬롯임.
+        # 청크 당 펄스 수 계산
+        # Step 1: Initialize 빈 리스트
+        pulses_per_chunk = [0] * chunks_needed
+        # Step 2: 랜덤하게 x_cps개의 펄스를 청크에 분배
+        for _ in range(x_cps):
+            idx = random.randint(0, chunks_needed - 1)
+            pulses_per_chunk[idx] += 1 
+        print('Generated pulse time block:', cps)
+        return pulses_per_chunk
+        
+    def calculate_chunks_for_xcps(x_cps, slots_per_chunk=2028, time_per_slot_ns=20):
+        # 청크 시간 (초 단위)
+        chunk_time_sec = (slots_per_chunk * time_per_slot_ns) * 1e-9
+        # 펄스 하나 당 청크 수
+        chunks_needed = 1 / (x_cps * chunk_time_sec)
+        return int(chunks_needed)
 
     def change_tcp_model_run(self, state):
         self.tcp_run = state
@@ -492,7 +535,7 @@ class MainWidget(QWidget):
             bottom_axis.setTextPen(pg.mkPen(color='black'))
             bottom_axis.setStyle(tickFont=QFont("Arial", 11, QFont.Bold))
             # x축 단위 추가
-            label = LabelItem(text="[ns]", angle=0, color='black', justify='left')
+            label = LabelItem(text="[ms]", angle=0, color='black', justify='left')
             label.item.setFont(QFont("Arial", 11, QFont.Bold))
             plot_item.layout.addItem(label, 3, 0) 
             
@@ -630,24 +673,42 @@ class MainWidget(QWidget):
         print(f"Received message from client: {message}")
         
     def display_message(self, message):
-        PACKET_SIZE = 5
+        """ 5개 받는 경우 [POS, VAL]"""
+        # PACKET_SIZE = 5
+        # for i in range(0, len(message), PACKET_SIZE):
+        #     segment = message[i:i + PACKET_SIZE]
+        #     if len(segment) < PACKET_SIZE:
+        #         print("Incomplete packet detected, skipping.")
+        #         continue
+            
+        #     raw_val_0 = segment[0]
+        #     raw_val_1 = struct.unpack('<f', segment[1:5])[0]
+        #     # print(f"[{i // PACKET_SIZE}] raw_val_0: {raw_val_0}, raw_val_1: {raw_val_1:.6f}")
+            
+        #     self.x_data.append(self.x_start)  # 순차적인 인덱스 (또는 timestamp)
+        #     self.y_data.append(raw_val_1)
+            
+        #     self.x_start += 0.00002  # x축 간격 (20ns 단위로 증가)
+        
+        """ 4개 받는 경우 [VAL]"""
+        PACKET_SIZE = 4
         for i in range(0, len(message), PACKET_SIZE):
             segment = message[i:i + PACKET_SIZE]
             if len(segment) < PACKET_SIZE:
                 print("Incomplete packet detected, skipping.")
                 continue
             
-            raw_val_0 = segment[0]
-            raw_val_1 = struct.unpack('<f', segment[1:5])[0]
+            # raw_val_0 = segment[0]
+            raw_val_1 = struct.unpack('<f', segment)[0]
             # print(f"[{i // PACKET_SIZE}] raw_val_0: {raw_val_0}, raw_val_1: {raw_val_1:.6f}")
             
             self.x_data.append(self.x_start)  # 순차적인 인덱스 (또는 timestamp)
             self.y_data.append(raw_val_1)
             
-            self.x_start += 20  # x축 간격 (20ns 단위로 증가)
+            self.x_start += 0.00002  # x축 간격 (20ns 단위로 증가)
             
-        # 일정 길이 이상 시 자르기 (예: 10240개 유지)
-        MAX_POINTS = 2048 * 1000
+        # 일정 길이 이상 시 자르기 (예: 2048개 유지)
+        MAX_POINTS = 2048 * 100 # 4.096 ms 윈도우만 표기.
         if len(self.x_data) > MAX_POINTS:
             self.x_data = self.x_data[-MAX_POINTS:]
             self.y_data = self.y_data[-MAX_POINTS:]
