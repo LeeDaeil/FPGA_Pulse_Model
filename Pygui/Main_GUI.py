@@ -9,11 +9,13 @@ from pyqtgraph.graphicsItems.GridItem import GridItem
 from pyqtgraph import LabelItem
 import pyqtgraph as pg
 import math
+import numpy as np
 import time
 import random
 
 VAULT_SIZE  = 40    # 볼트 크기
-PLOT_SKIP   = 3     # 그래프 x 포인트 스킵용
+PLOT_SKIP   = 0     # 그래프 x 포인트 스킵용
+DIRECT_SEND_CPS = False  # True: CPS를 직접 전송, False: CPS를 청크로 변환하여 전송
 
 
 class CustomPushButton(QPushButton):
@@ -193,7 +195,7 @@ class TCPClient(QThread):
         self.running = True
         self.tcp_run = False
         self.prev_val = "0"
-        self.pulse_time_bloack = []
+        self.pulse_time_chunk_block = []
         
     def run(self):
         try:
@@ -206,22 +208,31 @@ class TCPClient(QThread):
                 print(f"Connected to {self.host}:{self.port}")
             while self.running:
                 if self.tcp_run:
-                    # 1. Read pulse pos data to cps
-                    if len(self.pulse_time_bloack) == 0:
-                        if self.prev_val == "0":
-                            cps = 0
-                        else:
-                            # 펄스 신호 대기열 모두 소진 시 대기열 재생성
-                            self.pulse_time_bloack = self.cps_to_pulse_time_block(self.prev_val)
-                            # 펄스 신호 대기열에서 하나씩 꺼내서 전송
-                            cps = self.pulse_time_bloack.pop(0)
+                    start_time = time.time()
+                    
+                    if DIRECT_SEND_CPS:
+                        # TEST 모드: 인터페이스에 표기된 CPS 값을 그대로 전송
+                        cps = self.prev_val
                     else:
-                        # 펄스 신호 대기열에서 하나씩 꺼내서 전송
-                        cps = self.pulse_time_bloack.pop(0)
+                        # 1. Read pulse pos data to cps
+                        if len(self.pulse_time_chunk_block) == 0:
+                            if self.prev_val == "0":
+                                cps = 0
+                            else:
+                                # 펄스 신호 대기열 모두 소진 시 대기열 재생성
+                                self.pulse_time_chunk_block = self.cps_to_pulse_time_block(self.prev_val)
+                                # print('Recreating pulse time chunk block...')
+                                # 펄스 신호 대기열에서 하나씩 꺼내서 전송
+                                cps = self.pulse_time_chunk_block.pop(0)
+                        else:
+                            # 펄스 신호 대기열에서 하나씩 꺼내서 전송
+                            cps = self.pulse_time_chunk_block.pop(0)
                     
                     # 2. Send cps
                     self.client_socket.sendall(str(cps).encode())
                     data = self.client_socket.recv(8192)
+                    
+                    # print(f"One command sent: {cps}, Time taken: {time.time() - start_time:.6f} seconds")
                     
                     time.sleep(0.01)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
                     
@@ -244,29 +255,32 @@ class TCPClient(QThread):
         #      1 cps 를 표현하기 위해서는 약 24,659개의 청크가 필요하다.
         self.prev_val = cps
         if self.prev_val != "0":
-            self.pulse_time_bloack = self.cps_to_pulse_time_block(cps)
+            self.pulse_time_chunk_block = self.cps_to_pulse_time_block(cps)
         else:
-            self.pulse_time_bloack = []
+            self.pulse_time_chunk_block = []
         
     def cps_to_pulse_time_block(self, cps: str, slots_per_chunk=2028, time_per_slot_ns=20):
         x_cps = int(cps)
         chunk_time_sec = (slots_per_chunk * time_per_slot_ns) * 1e-9
         nub_chunk = int(1 / chunk_time_sec)
-        if x_cps > 1e+6:
+        print(f"cps: {x_cps}, chunk_time_sec: {chunk_time_sec}, nub_chunk: {nub_chunk}")
+        if 1e+6 < x_cps:
             divided_chunk = int(nub_chunk/1000)
-            list_chunk = [0] * divided_chunk
-            
-            for _ in range(int(x_cps/1000)):
-                idx = random.randint(0, divided_chunk - 1)
-                list_chunk[idx] += 1
+            # 1. 초기화
+            list_chunk = np.zeros(divided_chunk, dtype=int)
+            # 2. 요청 x_cps개를 랜덤한 인덱스에 분포시키기
+            idxs = np.random.randint(0, divided_chunk, size=int(x_cps/1000))
+            # 3. 각 인덱스의 출현 횟수를 카운트해서 누적
+            np.add.at(list_chunk, idxs, 1)
         else:
-            list_chunk = [0] * nub_chunk
-            
-            for _ in range(x_cps):
-                idx = random.randint(0, nub_chunk - 1)
-                list_chunk[idx] += 1
+            # 1. 초기화
+            list_chunk = np.zeros(nub_chunk, dtype=int)
+            # 2. 요청 x_cps개를 랜덤한 인덱스에 분포시키기
+            idxs = np.random.randint(0, nub_chunk, size=x_cps)
+            # 3. 각 인덱스의 출현 횟수를 카운트해서 누적
+            np.add.at(list_chunk, idxs, 1)
         
-        return list_chunk
+        return list_chunk.tolist()
         
     def calculate_chunks_for_xcps(x_cps, slots_per_chunk=2028, time_per_slot_ns=20):
         # 청크 시간 (초 단위)
@@ -709,7 +723,11 @@ class MainWidget(QWidget):
             raw_val_1 = struct.unpack('<f', segment)[0]
             # print(f"[{i // PACKET_SIZE}] raw_val_0: {raw_val_0}, raw_val_1: {raw_val_1:.6f}")
             
-            if self.x_skip % PLOT_SKIP == 0:
+            if PLOT_SKIP == 0:
+                # SKIP 고려하지 않고 그래프 저장
+                self.x_data.append(self.x_start)  # 순차적인 인덱스 (또는 timestamp)
+                self.y_data.append(raw_val_1)
+            elif self.x_skip % PLOT_SKIP == 0:
                 # SKIP 고려해서 그래프 저장
                 self.x_data.append(self.x_start)  # 순차적인 인덱스 (또는 timestamp)
                 self.y_data.append(raw_val_1)
@@ -718,7 +736,7 @@ class MainWidget(QWidget):
             self.x_skip += 1 # skip용.
             
         # 일정 길이 이상 시 자르기 (예: 2048개 유지)
-        MAX_POINTS = 2048 * 100 # 4.096 ms 윈도우만 표기.
+        MAX_POINTS = 2048 * 10 # 4.096 ms 윈도우만 표기.
         if len(self.x_data) > MAX_POINTS:
             self.x_data = self.x_data[-MAX_POINTS:]
             self.y_data = self.y_data[-MAX_POINTS:]
