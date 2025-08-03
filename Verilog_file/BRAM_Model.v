@@ -14,6 +14,11 @@ module bram(
     reg [31:0] mem4;
     reg [31:0] mem5;
     reg [31:0] mem6;
+    reg [31:0] mem7;
+    reg [31:0] mem8;
+    reg [31:0] mem9;
+    reg [31:0] mem10;
+    reg [31:0] mem11;
 
     // 13비트 주소 인덱스 (0~8191까지 가능, 실제는 0~7999만 사용)
     wire [12:0] addr_index = addra[12:0];
@@ -42,6 +47,11 @@ module bram(
             mem4 <= mem[12];
             mem5 <= mem[16];
             mem6 <= mem[20];
+            mem7 <= mem[24];
+            mem8 <= mem[28];
+            mem9 <= mem[32];
+            mem10 <= mem[36];
+            mem11 <= mem[40];
 
             // 디버깅 출력
             // $display("[READ ] MEM[%0d] [0x%08X] => 0x%08X", addr_index, dina, mem[addr_index]);
