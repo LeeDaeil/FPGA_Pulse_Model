@@ -286,14 +286,17 @@ module tb_PulseGen();
 
         // Test 2: cps = 10 → 10개의 pulse 발생
         cps = 1;
-        #500;
+        #2000;
 
         cps = 0;
         #50
 
         // Test 2: cps = 10 → 10개의 pulse 발생
         cps = 1;
-        #500;
+        #2000;
+
+        cps = 0;
+        #50
 
         // // Test 3: cps = 5 → 다시 시작됨 (변경된 cps 값)
         // cps = 5;

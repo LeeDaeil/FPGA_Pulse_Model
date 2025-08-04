@@ -1,32 +1,22 @@
 `timescale 1ns / 1ps
-`include "./Verilog_file/BRAM_Model.v"
-`include "./Verilog_file/fp32_adder.v"
+`include "./Verilog_file/PulseGenSpeed/BRAM_Model.v"
+`include "./Verilog_file/PulseGenSpeed/fp32_adder.v"
 
-module PulseGenSpeed(
+module PulseGenSpeedNut(
     input wire clk,
     input wire [31:0] cps,
     output reg [31:0] bram_addr,
     output reg [31:0] bram_data_in,
-    output reg bram_we_pin,
-    output reg ena_pin,
-
-    output reg [31:0] bram_addr_pulse,
-    output reg [31:0] bram_data_in_pulse,
-    output reg bram_we_pulse,
-    output reg ena_pulse,
-
-    input wire [31:0] bram_data_out_pulse
+    output reg bram_we,
+    output reg bram_ena,
+    input wire [31:0] bram_data_out
 );
     // reg [9:0] lfsr = 10'b1010101010;  // 10비트 초기값
     reg [10:0] lfsr = 11'b10101010101;  // 11비트 초기값
-
     reg [31:0] count = 0;
     reg [31:0] prev_cps = 0;
-
     reg [31:0] mem_count = 0;
-
     reg [3:0]  mem_control_state = 0;
-    reg [31:0] prev_mem_val = 0;
 
     // Neutron Pulse Data Table
     reg [31:0] float_data [0:49];
@@ -444,54 +434,59 @@ module PulseGenSpeed(
 
     always @(posedge clk) begin
         if (cps == 0) begin
-            bram_addr <= 0;
+            // Module Input Section
+                bram_addr <= 0;         // Bram 주소 초기화
+                bram_we <= 0;           // Bram 쓰기 비활성화
+                bram_ena <= 0;          // Bram 비활성화
+
+            // Module Local Variables
             // lfsr <= 10'b1010101010;
             // lfsr <= 11'b10101010101; // 11비트 초기값
             lfsr <= {lfsr[9:0], lfsr[10] ^ lfsr[7]}; // 11비트 LFSR로 변경 (이전 변경 값을 가져다 씀)
             count <= 0;
             prev_cps <= 0;
-            bram_we_pin <= 0;
-            ena_pin <= 0;
 
-            ena_pulse <= 0;
-            bram_we_pulse <= 0;
-            mem_control_state <= 0;
             mem_count <= 0;
-
+            mem_control_state <= 0;
         end else begin
             // cps가 변경되었을 경우 재시작
             if (cps != prev_cps) begin
-                count <= 0;
+                // Module Input Section
+                bram_addr <= 0;         // Bram 주소 초기화
+                bram_we <= 0;           // Bram 쓰기 비활성화
+                bram_ena <= 1;          // Bram 활성화
+
+                // Module Local Variables
                 // lfsr <= 10'b1010101010;
                 // lfsr <= 11'b10101010101; // 11비트 초기값
                 lfsr <= {lfsr[9:0], lfsr[10] ^ lfsr[7]}; // 11비트 LFSR로 변경 (이전 변경 값을 가져다 씀)
 
+                count <= 0;
                 prev_cps <= cps;
 
-                ena_pulse <= 1;
-                bram_we_pulse <= 0;
-                mem_control_state <= 0;
-
-                bram_addr_pulse <= 0;
                 mem_count <= 0;
+                mem_control_state <= 0;
             end else if (count < cps) begin
                 case (mem_control_state)
                     0: begin
                         // 읽기 상태: Bram에서 데이터 읽기
-                        ena_pulse <= 1;     // Bram 활성화
-                        bram_we_pulse <= 0; // Bram 쓰기 비활성
-                        bram_addr_pulse <= mem_count * 4; // 주소 설정
+                        // Module Input Section
+                        bram_addr <= mem_count * 4; // 주소 설정 [0]
+                        bram_we <= 0;               // Bram 쓰기 비활성화
+                        bram_ena <= 1;              // Bram 활성화
+                        // Module Local Variables
                         mem_count <= mem_count + 1; // 다음 인덱스로 이동
                         mem_control_state <= 1; // 다음 상태로 전환
                     end
 
                     1: begin
-                        // 읽기 상태: Bram에서 데이터 읽기
-                        ena_pulse <= 1; // Bram 활성화
-                        bram_we_pulse <= 0; // Bram 쓰기 활성화
-                        bram_addr_pulse <= mem_count * 4; // 주소 설정
+                        // 저장 상태: Bram에서 읽은 데이터 저장
+                        bram_addr <= mem_count * 4; // 주소 설정 [1]
+                        bram_we <= 0;               // Bram 쓰기 비활성화
+                        bram_ena <= 1;              // Bram 활성화
 
-                        save_data[mem_count] <= bram_data_out_pulse; // 데이터 입력
+                        // Module Local Variables
+                        save_data[mem_count] <= bram_data_out; // 데이터 입력
 
                         if (mem_count < 50) begin
                             mem_count <= mem_count + 1; // 다음 인덱스로 이동
@@ -502,6 +497,7 @@ module PulseGenSpeed(
                     end
 
                     2: begin
+                        // 계산 상태: 저장된 데이터와 Neutron Pulse Data Table의 데이터 더하기
                         save_data[0] <= float_add_result_0;
                         save_data[1] <= float_add_result_1;
                         save_data[2] <= float_add_result_2;
@@ -556,25 +552,28 @@ module PulseGenSpeed(
                     end
 
                     3: begin
-                        ena_pulse <= 1; // Bram 활성화
-                        bram_we_pulse <= 1; // Bram 쓰기 활성화
-                        bram_addr_pulse <= mem_count * 4; // 주소 설정
-
-                        bram_data_in_pulse <= save_data[mem_count]; // 저장된 데이터 쓰기
+                        // 쓰기 상태: 계산된 데이터를 Bram에 쓰기
+                        bram_addr <= mem_count * 4; // 주소 설정 [1]
+                        bram_we <= 1;               // Bram 쓰기 활성화
+                        bram_ena <= 1;              // Bram 활성화
+                        // Module Local Variables
+                        bram_data_in <= save_data[mem_count]; // 저장된 데이터 쓰기
 
                         if (mem_count < 50) begin
                             mem_count <= mem_count + 1; // 다음 인덱스로 이동
                         end else begin
-                            mem_control_state <= 4; // 다음 상태로 전환
                             mem_count <= 0; // 인덱스 초기화
+                            mem_control_state <= 4; // 다음 상태로 전환
                         end
-
                     end
+
                     4: begin
-                        ena_pulse <= 0; // Bram 활성화
-                        bram_we_pulse <= 0; // Bram 쓰기 활성화
-                        mem_control_state <= 0;
-                        count <= count + 1;             // 카운트 증가
+                        // 완료 상태: 모든 작업 완료 후 초기화
+                        bram_we <= 0;               // Bram 쓰기 비활성화
+                        bram_ena <= 0;              // Bram 비활성화
+
+                        count <= count + 1;         // CPS 카운트 증가
+                        mem_control_state <= 0;     // 상태 초기화
                     end
                 endcase
             end
@@ -583,7 +582,7 @@ module PulseGenSpeed(
 endmodule
 
 
-module tb_PulseGenSpeed();
+module tb_PulseGenSpeedNut();
 
     // Inputs
     reg clk;
@@ -592,55 +591,37 @@ module tb_PulseGenSpeed();
     // Outputs
     wire [31:0] bram_addr;
     wire [31:0] bram_data_in;
-    wire bram_we_pin;
-    wire ena_pin;
+    wire bram_we;
+    wire bram_ena;
 
-    wire [31:0] bram_addr_pulse;
-    wire [31:0] bram_data_in_pulse;
-    wire bram_we_pulse;
-    wire ena_pin_pulse;
-
-    wire [31:0] bram_data_out_pulse;
+    wire [31:0] bram_data_out;
 
     // Instantiate the Unit Under Test (UUT)
-    PulseGenSpeed uut (
+    PulseGenSpeedNut uut (
         .clk(clk),
         .cps(cps),
         .bram_addr(bram_addr),
         .bram_data_in(bram_data_in),
-        .bram_we_pin(bram_we_pin),
-        .ena_pin(ena_pin),
-        .bram_addr_pulse(bram_addr_pulse),
-        .bram_data_in_pulse(bram_data_in_pulse),
-        .bram_we_pulse(bram_we_pulse),
-        .ena_pulse(ena_pulse),
-        .bram_data_out_pulse(bram_data_out_pulse)
-    );
-
-    bram pin_bram_inst (
-        .clka(clk),
-        .ena(ena_pin),
-        .wea(bram_we_pin),
-        .addra(bram_addr),
-        .dina(bram_data_in),
-        .douta()  // Read output not used in this test
+        .bram_we(bram_we),
+        .bram_ena(bram_ena),
+        .bram_data_out(bram_data_out)
     );
 
     bram pulse_bram_inst (
         .clka(clk),
-        .ena(ena_pulse),
-        .wea(bram_we_pulse),
-        .addra(bram_addr_pulse),
-        .dina(bram_data_in_pulse),
-        .douta(bram_data_out_pulse)  // Read output not used in this test
+        .ena(bram_ena),
+        .wea(bram_we),
+        .addra(bram_addr),
+        .dina(bram_data_in),
+        .douta(bram_data_out)
     );
 
     // Clock generation: 10ns period
     always #5 clk = ~clk;
 
     initial begin
-        $dumpfile("Verilog_file/PulseGenSpeed.vcd");
-        $dumpvars(0, tb_PulseGenSpeed);
+        $dumpfile("Verilog_file/PulseGenSpeed/PulseGenSpeedNut.vcd");
+        $dumpvars(0, tb_PulseGenSpeedNut);
         // Initialize inputs
         clk = 0;
         cps = 0;
