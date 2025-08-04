@@ -435,9 +435,9 @@ module PulseGenSpeedNut(
     always @(posedge clk) begin
         if (cps == 0) begin
             // Module Input Section
-                bram_addr <= 0;         // Bram 주소 초기화
-                bram_we <= 0;           // Bram 쓰기 비활성화
-                bram_ena <= 0;          // Bram 비활성화
+            bram_addr <= 0;         // Bram 주소 초기화
+            bram_we <= 0;           // Bram 쓰기 비활성화
+            bram_ena <= 0;          // Bram 비활성화
 
             // Module Local Variables
             // lfsr <= 10'b1010101010;
@@ -448,6 +448,58 @@ module PulseGenSpeedNut(
 
             mem_count <= 0;
             mem_control_state <= 0;
+
+            save_data[0] <= 32'd0;
+            save_data[1] <= 32'd0;
+            save_data[2] <= 32'd0;
+            save_data[3] <= 32'd0;
+            save_data[4] <= 32'd0;
+            save_data[5] <= 32'd0;
+            save_data[6] <= 32'd0;
+            save_data[7] <= 32'd0;
+            save_data[8] <= 32'd0;
+            save_data[9] <= 32'd0;
+            save_data[10] <= 32'd0;
+            save_data[11] <= 32'd0;
+            save_data[12] <= 32'd0;
+            save_data[13] <= 32'd0;
+            save_data[14] <= 32'd0;
+            save_data[15] <= 32'd0;
+            save_data[16] <= 32'd0;
+            save_data[17] <= 32'd0;
+            save_data[18] <= 32'd0;
+            save_data[19] <= 32'd0;
+            save_data[20] <= 32'd0;
+            save_data[21] <= 32'd0;
+            save_data[22] <= 32'd0;
+            save_data[23] <= 32'd0;
+            save_data[24] <= 32'd0;
+            save_data[25] <= 32'd0;
+            save_data[26] <= 32'd0;
+            save_data[27] <= 32'd0;
+            save_data[28] <= 32'd0;
+            save_data[29] <= 32'd0;
+            save_data[30] <= 32'd0;
+            save_data[31] <= 32'd0;
+            save_data[32] <= 32'd0;
+            save_data[33] <= 32'd0;
+            save_data[34] <= 32'd0;
+            save_data[35] <= 32'd0;
+            save_data[36] <= 32'd0;
+            save_data[37] <= 32'd0;
+            save_data[38] <= 32'd0;
+            save_data[39] <= 32'd0;
+            save_data[40] <= 32'd0;
+            save_data[41] <= 32'd0;
+            save_data[42] <= 32'd0;
+            save_data[43] <= 32'd0;
+            save_data[44] <= 32'd0;
+            save_data[45] <= 32'd0;
+            save_data[46] <= 32'd0;
+            save_data[47] <= 32'd0;
+            save_data[48] <= 32'd0;
+            save_data[49] <= 32'd0;
+
         end else begin
             // cps가 변경되었을 경우 재시작
             if (cps != prev_cps) begin

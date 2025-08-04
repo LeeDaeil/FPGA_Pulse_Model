@@ -666,6 +666,13 @@ module tb_PulseGenSpeed();
         cps = 0;
         #50
 
+        // Test 2: cps = 10 → 10개의 pulse 발생
+        cps = 1;
+        #2000;
+
+        cps = 0;
+        #50
+
         // // Test 2: cps = 10 → 10개의 pulse 발생
         // cps = 1;
         // #1000;

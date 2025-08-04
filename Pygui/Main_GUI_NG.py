@@ -16,6 +16,7 @@ import random
 VAULT_SIZE  = 40    # 볼트 크기
 PLOT_SKIP   = 0     # 그래프 x 포인트 스킵용
 DIRECT_SEND_CPS = True  # True: CPS를 직접 전송, False: CPS를 청크로 변환하여 전송
+MODE = 0    # 0: Neutron,   1: Gamma,    2: Neutron+Gamma
 
 
 class CustomPushButton(QPushButton):
@@ -234,7 +235,7 @@ class TCPClient(QThread):
                     
                     # print(f"One command sent: {cps}, Time taken: {time.time() - start_time:.6f} seconds")
                     
-                    time.sleep(0.01)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
+                    time.sleep(0.1)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
                     
                     if data:
                         # print(f"Data Len : {len(data)}")

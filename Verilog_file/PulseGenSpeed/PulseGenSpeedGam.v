@@ -153,6 +153,21 @@ module PulseGenSpeedGam(
 
             mem_count <= 0;
             mem_control_state <= 0;
+
+            // save_data[0] <= 32'd0;
+            // save_data[1] <= 32'd0;
+            // save_data[2] <= 32'd0;
+            // save_data[3] <= 32'd0;
+            // save_data[4] <= 32'd0;
+            // save_data[5] <= 32'd0;
+            // save_data[6] <= 32'd0;
+            // save_data[7] <= 32'd0;
+            // save_data[8] <= 32'd0;
+            // save_data[9] <= 32'd0;
+            // save_data[10] <= 32'd0;
+            // save_data[11] <= 32'd0;
+            // save_data[12] <= 32'd0;
+
         end else begin
             // cps가 변경되었을 경우 재시작
             if (cps != prev_cps) begin
@@ -172,12 +187,28 @@ module PulseGenSpeedGam(
                 mem_count <= 0;
                 mem_gam_count <= 0;     // 감마의 경우 2배
                 mem_control_state <= 0;
+
+                // save_data[0] <= 32'd0;
+                // save_data[1] <= 32'd0;
+                // save_data[2] <= 32'd0;
+                // save_data[3] <= 32'd0;
+                // save_data[4] <= 32'd0;
+                // save_data[5] <= 32'd0;
+                // save_data[6] <= 32'd0;
+                // save_data[7] <= 32'd0;
+                // save_data[8] <= 32'd0;
+                // save_data[9] <= 32'd0;
+                // save_data[10] <= 32'd0;
+                // save_data[11] <= 32'd0;
+                // save_data[12] <= 32'd0;
+
             end else if (count < cps) begin
                 case (mem_control_state)
                     0: begin
                         // 읽기 상태: Bram에서 데이터 읽기
                         // Module Input Section
-                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
+                        // bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
+                        bram_addr <= mem_count * 4; // 주소 설정 [0]
                         bram_we <= 0;               // Bram 쓰기 비활성화
                         bram_ena <= 1;              // Bram 활성화
                         // Module Local Variables
@@ -187,7 +218,8 @@ module PulseGenSpeedGam(
 
                     1: begin
                         // 저장 상태: Bram에서 읽은 데이터 저장
-                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [1]
+                        // bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [1]
+                        bram_addr <= mem_count * 4; // 주소 설정 [1]
                         bram_we <= 0;               // Bram 쓰기 비활성화
                         bram_ena <= 1;              // Bram 활성화
 
@@ -222,7 +254,8 @@ module PulseGenSpeedGam(
 
                     3: begin
                         // 쓰기 상태: 계산된 데이터를 Bram에 쓰기
-                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [1]
+                        // bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [1]
+                        bram_addr <= mem_count * 4; // 주소 설정 [1]
                         bram_we <= 1;               // Bram 쓰기 활성화
                         bram_ena <= 1;              // Bram 활성화
                         // Module Local Variables
@@ -251,6 +284,20 @@ module PulseGenSpeedGam(
                         end
                         
                         mem_control_state <= 0;     // 상태 초기화
+
+                        // save_data[0] <= 32'd0;
+                        // save_data[1] <= 32'd0;
+                        // save_data[2] <= 32'd0;
+                        // save_data[3] <= 32'd0;
+                        // save_data[4] <= 32'd0;
+                        // save_data[5] <= 32'd0;
+                        // save_data[6] <= 32'd0;
+                        // save_data[7] <= 32'd0;
+                        // save_data[8] <= 32'd0;
+                        // save_data[9] <= 32'd0;
+                        // save_data[10] <= 32'd0;
+                        // save_data[11] <= 32'd0;
+                        // save_data[12] <= 32'd0;
                     end
                 endcase
             end
