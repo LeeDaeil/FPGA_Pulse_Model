@@ -127,7 +127,61 @@ module PulseGenSpeedNut(
         save_data[48] = 32'd0;
         save_data[49] = 32'd0;
     end
-    
+
+    reg [31:0] save_data2 [0:49];
+    initial begin
+        save_data2[0] = 32'd0;
+        save_data2[1] = 32'd0;
+        save_data2[2] = 32'd0;
+        save_data2[3] = 32'd0;
+        save_data2[4] = 32'd0;
+        save_data2[5] = 32'd0;
+        save_data2[6] = 32'd0;
+        save_data2[7] = 32'd0;
+        save_data2[8] = 32'd0;
+        save_data2[9] = 32'd0;
+        save_data2[10] = 32'd0;
+        save_data2[11] = 32'd0;
+        save_data2[12] = 32'd0;
+        save_data2[13] = 32'd0;
+        save_data2[14] = 32'd0;
+        save_data2[15] = 32'd0;
+        save_data2[16] = 32'd0;
+        save_data2[17] = 32'd0;
+        save_data2[18] = 32'd0;
+        save_data2[19] = 32'd0;
+        save_data2[20] = 32'd0;
+        save_data2[21] = 32'd0;
+        save_data2[22] = 32'd0;
+        save_data2[23] = 32'd0;
+        save_data2[24] = 32'd0;
+        save_data2[25] = 32'd0;
+        save_data2[26] = 32'd0;
+        save_data2[27] = 32'd0;
+        save_data2[28] = 32'd0;
+        save_data2[29] = 32'd0;
+        save_data2[30] = 32'd0;
+        save_data2[31] = 32'd0;
+        save_data2[32] = 32'd0;
+        save_data2[33] = 32'd0;
+        save_data2[34] = 32'd0;
+        save_data2[35] = 32'd0;
+        save_data2[36] = 32'd0;
+        save_data2[37] = 32'd0;
+        save_data2[38] = 32'd0;
+        save_data2[39] = 32'd0;
+        save_data2[40] = 32'd0;
+        save_data2[41] = 32'd0;
+        save_data2[42] = 32'd0;
+        save_data2[43] = 32'd0;
+        save_data2[44] = 32'd0;
+        save_data2[45] = 32'd0;
+        save_data2[46] = 32'd0;
+        save_data2[47] = 32'd0;
+        save_data2[48] = 32'd0;
+        save_data2[49] = 32'd0;
+    end
+
     reg [2:0] state;
 
     wire [31:0] float_add_result_0;
@@ -449,57 +503,6 @@ module PulseGenSpeedNut(
             mem_count <= 0;
             mem_control_state <= 0;
 
-            save_data[0] <= 32'd0;
-            save_data[1] <= 32'd0;
-            save_data[2] <= 32'd0;
-            save_data[3] <= 32'd0;
-            save_data[4] <= 32'd0;
-            save_data[5] <= 32'd0;
-            save_data[6] <= 32'd0;
-            save_data[7] <= 32'd0;
-            save_data[8] <= 32'd0;
-            save_data[9] <= 32'd0;
-            save_data[10] <= 32'd0;
-            save_data[11] <= 32'd0;
-            save_data[12] <= 32'd0;
-            save_data[13] <= 32'd0;
-            save_data[14] <= 32'd0;
-            save_data[15] <= 32'd0;
-            save_data[16] <= 32'd0;
-            save_data[17] <= 32'd0;
-            save_data[18] <= 32'd0;
-            save_data[19] <= 32'd0;
-            save_data[20] <= 32'd0;
-            save_data[21] <= 32'd0;
-            save_data[22] <= 32'd0;
-            save_data[23] <= 32'd0;
-            save_data[24] <= 32'd0;
-            save_data[25] <= 32'd0;
-            save_data[26] <= 32'd0;
-            save_data[27] <= 32'd0;
-            save_data[28] <= 32'd0;
-            save_data[29] <= 32'd0;
-            save_data[30] <= 32'd0;
-            save_data[31] <= 32'd0;
-            save_data[32] <= 32'd0;
-            save_data[33] <= 32'd0;
-            save_data[34] <= 32'd0;
-            save_data[35] <= 32'd0;
-            save_data[36] <= 32'd0;
-            save_data[37] <= 32'd0;
-            save_data[38] <= 32'd0;
-            save_data[39] <= 32'd0;
-            save_data[40] <= 32'd0;
-            save_data[41] <= 32'd0;
-            save_data[42] <= 32'd0;
-            save_data[43] <= 32'd0;
-            save_data[44] <= 32'd0;
-            save_data[45] <= 32'd0;
-            save_data[46] <= 32'd0;
-            save_data[47] <= 32'd0;
-            save_data[48] <= 32'd0;
-            save_data[49] <= 32'd0;
-
         end else begin
             // cps가 변경되었을 경우 재시작
             if (cps != prev_cps) begin
@@ -523,7 +526,8 @@ module PulseGenSpeedNut(
                     0: begin
                         // 읽기 상태: Bram에서 데이터 읽기
                         // Module Input Section
-                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
+                        // bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
+                        bram_addr <= mem_count * 4; // 주소 설정 [0]
                         bram_we <= 0;               // Bram 쓰기 비활성화
                         bram_ena <= 1;              // Bram 활성화
                         // Module Local Variables
@@ -533,11 +537,18 @@ module PulseGenSpeedNut(
 
                     1: begin
                         // 저장 상태: Bram에서 읽은 데이터 저장
-                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
+                        // bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
+                        bram_addr <= mem_count * 4; // 주소 설정 [0]
                         bram_we <= 0;               // Bram 쓰기 비활성화
                         bram_ena <= 1;              // Bram 활성화
 
                         // Module Local Variables
+                        // if (count == 0) begin
+                        //     save_data[mem_count] <= 32'd0; // 초기화
+                        // end else begin
+                        //     save_data[mem_count] <= bram_data_out; // 데이터 입력
+                        // end
+
                         save_data[mem_count] <= bram_data_out; // 데이터 입력
 
                         if (mem_count < 50) begin
@@ -546,70 +557,76 @@ module PulseGenSpeedNut(
                             mem_control_state <= 2; // 다음 상태로 전환
                             mem_count <= 0; // 인덱스 초기화
                         end
+                        
+                        // 디버그 출력
+                        if (mem_count < 5) begin
+                            $display("%d | save_data[%0d] = %h | %h", count, mem_count, bram_data_out, save_data[mem_count - 1]);
+                        end
                     end
 
                     2: begin
                         // 계산 상태: 저장된 데이터와 Neutron Pulse Data Table의 데이터 더하기
-                        save_data[0] <= float_add_result_0;
-                        save_data[1] <= float_add_result_1;
-                        save_data[2] <= float_add_result_2;
-                        save_data[3] <= float_add_result_3;
-                        save_data[4] <= float_add_result_4;
-                        save_data[5] <= float_add_result_5;
-                        save_data[6] <= float_add_result_6;
-                        save_data[7] <= float_add_result_7;
-                        save_data[8] <= float_add_result_8;
-                        save_data[9] <= float_add_result_9;
-                        save_data[10] <= float_add_result_10;
-                        save_data[11] <= float_add_result_11;
-                        save_data[12] <= float_add_result_12;
-                        save_data[13] <= float_add_result_13;   
-                        save_data[14] <= float_add_result_14;
-                        save_data[15] <= float_add_result_15;
-                        save_data[16] <= float_add_result_16;
-                        save_data[17] <= float_add_result_17;
-                        save_data[18] <= float_add_result_18;
-                        save_data[19] <= float_add_result_19;
-                        save_data[20] <= float_add_result_20;
-                        save_data[21] <= float_add_result_21;
-                        save_data[22] <= float_add_result_22;
-                        save_data[23] <= float_add_result_23;
-                        save_data[24] <= float_add_result_24;
-                        save_data[25] <= float_add_result_25;
-                        save_data[26] <= float_add_result_26;
-                        save_data[27] <= float_add_result_27;
-                        save_data[28] <= float_add_result_28;
-                        save_data[29] <= float_add_result_29;
-                        save_data[30] <= float_add_result_30;
-                        save_data[31] <= float_add_result_31;
-                        save_data[32] <= float_add_result_32;
-                        save_data[33] <= float_add_result_33;
-                        save_data[34] <= float_add_result_34;
-                        save_data[35] <= float_add_result_35;
-                        save_data[36] <= float_add_result_36;
-                        save_data[37] <= float_add_result_37;
-                        save_data[38] <= float_add_result_38;
-                        save_data[39] <= float_add_result_39;
-                        save_data[40] <= float_add_result_40;
-                        save_data[41] <= float_add_result_41;
-                        save_data[42] <= float_add_result_42;
-                        save_data[43] <= float_add_result_43;
-                        save_data[44] <= float_add_result_44;
-                        save_data[45] <= float_add_result_45;
-                        save_data[46] <= float_add_result_46;
-                        save_data[47] <= float_add_result_47;
-                        save_data[48] <= float_add_result_48;
-                        save_data[49] <= float_add_result_49;
+                        save_data2[0] <= float_add_result_0;
+                        save_data2[1] <= float_add_result_1;
+                        save_data2[2] <= float_add_result_2;
+                        save_data2[3] <= float_add_result_3;
+                        save_data2[4] <= float_add_result_4;
+                        save_data2[5] <= float_add_result_5;
+                        save_data2[6] <= float_add_result_6;
+                        save_data2[7] <= float_add_result_7;
+                        save_data2[8] <= float_add_result_8;
+                        save_data2[9] <= float_add_result_9;
+                        save_data2[10] <= float_add_result_10;
+                        save_data2[11] <= float_add_result_11;
+                        save_data2[12] <= float_add_result_12;
+                        save_data2[13] <= float_add_result_13;   
+                        save_data2[14] <= float_add_result_14;
+                        save_data2[15] <= float_add_result_15;
+                        save_data2[16] <= float_add_result_16;
+                        save_data2[17] <= float_add_result_17;
+                        save_data2[18] <= float_add_result_18;
+                        save_data2[19] <= float_add_result_19;
+                        save_data2[20] <= float_add_result_20;
+                        save_data2[21] <= float_add_result_21;
+                        save_data2[22] <= float_add_result_22;
+                        save_data2[23] <= float_add_result_23;
+                        save_data2[24] <= float_add_result_24;
+                        save_data2[25] <= float_add_result_25;
+                        save_data2[26] <= float_add_result_26;
+                        save_data2[27] <= float_add_result_27;
+                        save_data2[28] <= float_add_result_28;
+                        save_data2[29] <= float_add_result_29;
+                        save_data2[30] <= float_add_result_30;
+                        save_data2[31] <= float_add_result_31;
+                        save_data2[32] <= float_add_result_32;
+                        save_data2[33] <= float_add_result_33;
+                        save_data2[34] <= float_add_result_34;
+                        save_data2[35] <= float_add_result_35;
+                        save_data2[36] <= float_add_result_36;
+                        save_data2[37] <= float_add_result_37;
+                        save_data2[38] <= float_add_result_38;
+                        save_data2[39] <= float_add_result_39;
+                        save_data2[40] <= float_add_result_40;
+                        save_data2[41] <= float_add_result_41;
+                        save_data2[42] <= float_add_result_42;
+                        save_data2[43] <= float_add_result_43;
+                        save_data2[44] <= float_add_result_44;
+                        save_data2[45] <= float_add_result_45;
+                        save_data2[46] <= float_add_result_46;
+                        save_data2[47] <= float_add_result_47;
+                        save_data2[48] <= float_add_result_48;
+                        save_data2[49] <= float_add_result_49;
                         mem_control_state <= 3; // 다음 상태로 전환
                     end
 
                     3: begin
                         // 쓰기 상태: 계산된 데이터를 Bram에 쓰기
-                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
+                        // bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
+                        bram_addr <= mem_count * 4; // 주소 설정 [0]
                         bram_we <= 1;               // Bram 쓰기 활성화
                         bram_ena <= 1;              // Bram 활성화
                         // Module Local Variables
-                        bram_data_in <= save_data[mem_count]; // 저장된 데이터 쓰기
+                        bram_data_in <= save_data2[mem_count]; // 저장된 데이터 쓰기
 
                         if (mem_count < 50) begin
                             mem_count <= mem_count + 1; // 다음 인덱스로 이동
@@ -685,33 +702,52 @@ module tb_PulseGenSpeedNut();
 
         // Test 1: cps = 0 → 모듈 초기화 상태 유지
         cps = 0;
+        $display("call cps = 0");
         #50;
 
         // Test 2: cps = 10 → 10개의 pulse 발생
         cps = 1;
-        #2000;
+        $display("call cps = 1");
+        #3000;
 
         cps = 0;
+        $display("call cps = 0");
+        // 메모리 리셋
+        
+        pulse_bram_inst.mem[0] = 32'd0;
+        pulse_bram_inst.mem[4] = 32'd0;
+        pulse_bram_inst.mem[8] = 32'd0;
+        pulse_bram_inst.mem[12] = 32'd0;
+        pulse_bram_inst.mem[16] = 32'd0;
         #50
 
         // Test 2: cps = 10 → 10개의 pulse 발생
-        cps = 1;
-        #2000;
+        cps = 2;
+        $display("call cps = 2");
+        #3000;
 
         cps = 0;
+        $display("call cps = 0");
+        pulse_bram_inst.mem[0] = 32'd0;
+        pulse_bram_inst.mem[4] = 32'd0;
+        pulse_bram_inst.mem[8] = 32'd0;
+        pulse_bram_inst.mem[12] = 32'd0;
+        pulse_bram_inst.mem[16] = 32'd0;
         #50
 
-        // // Test 2: cps = 10 → 10개의 pulse 발생
-        // cps = 1;
-        // #1000;
+        // Test 2: cps = 10 → 10개의 pulse 발생
+        cps = 3;
+        $display("call cps = 3");
+        #4000;
 
-        // // Test 3: cps = 5 → 다시 시작됨 (변경된 cps 값)
-        // cps = 5;
-        // #500;
-
-        // // Test 4: cps = 0 → 종료
-        // cps = 0;
-        // #100;
+        cps = 0;
+        $display("call cps = 0");
+        pulse_bram_inst.mem[0] = 32'd0;
+        pulse_bram_inst.mem[4] = 32'd0;
+        pulse_bram_inst.mem[8] = 32'd0;
+        pulse_bram_inst.mem[12] = 32'd0;
+        pulse_bram_inst.mem[16] = 32'd0;
+        #50
 
         $finish;
     end

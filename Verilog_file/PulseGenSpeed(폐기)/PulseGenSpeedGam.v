@@ -57,6 +57,20 @@ module PulseGenSpeedGam(
     
     reg [2:0] state;
 
+    wire [31:0] float_in_0;
+    wire [31:0] float_in_1;
+    wire [31:0] float_in_2;
+    wire [31:0] float_in_3;
+    wire [31:0] float_in_4;
+    wire [31:0] float_in_5;
+    wire [31:0] float_in_6;
+    wire [31:0] float_in_7;
+    wire [31:0] float_in_8;
+    wire [31:0] float_in_9;
+    wire [31:0] float_in_10;
+    wire [31:0] float_in_11;
+    wire [31:0] float_in_12;
+
     wire [31:0] float_add_result_0;
     wire [31:0] float_add_result_1;
     wire [31:0] float_add_result_2;
@@ -72,77 +86,78 @@ module PulseGenSpeedGam(
     wire [31:0] float_add_result_12;
     // fp32_adder 모듈 인스턴스화
     fp32_adder adder0 (
-        .a(save_data[0]),
+        .a(float_in_0),
         .b(float_data[0]),
         .result(float_add_result_0)
     );
     fp32_adder adder1 (
-        .a(save_data[1]),
+        .a(float_in_1),
         .b(float_data[1]),
         .result(float_add_result_1)
     );
     fp32_adder adder2 (
-        .a(save_data[2]),
+        .a(float_in_2),
         .b(float_data[2]),
         .result(float_add_result_2)
     );
     fp32_adder adder3 (
-        .a(save_data[3]),
+        .a(float_in_3),
         .b(float_data[3]),
         .result(float_add_result_3)
     );
     fp32_adder adder4 (
-        .a(save_data[4]),
+        .a(float_in_4),
         .b(float_data[4]),
         .result(float_add_result_4)
     );
     fp32_adder adder5 (
-        .a(save_data[5]),
+        .a(float_in_5),
         .b(float_data[5]),
         .result(float_add_result_5)
     );
     fp32_adder adder6 (
-        .a(save_data[6]),
+        .a(float_in_6),
         .b(float_data[6]),
         .result(float_add_result_6)
     );
     fp32_adder adder7 (
-        .a(save_data[7]),
+        .a(float_in_7),
         .b(float_data[7]),
         .result(float_add_result_7)
     );
     fp32_adder adder8 (
-        .a(save_data[8]),
+        .a(float_in_8),
         .b(float_data[8]),
         .result(float_add_result_8)
     );
     fp32_adder adder9 (
-        .a(save_data[9]),
+        .a(float_in_9),
         .b(float_data[9]),
         .result(float_add_result_9)
     );
     fp32_adder adder10 (
-        .a(save_data[10]),
+        .a(float_in_10),
         .b(float_data[10]),
         .result(float_add_result_10)
     );
     fp32_adder adder11 (
-        .a(save_data[11]),
+        .a(float_in_11),
         .b(float_data[11]),
         .result(float_add_result_11)
     );
     fp32_adder adder12 (
-        .a(save_data[12]),
+        .a(float_in_12),
         .b(float_data[12]),
         .result(float_add_result_12)
     );
+    
 
     always @(posedge clk) begin
         if (cps == 0) begin
             // Module Input Section
-                bram_addr <= 0;         // Bram 주소 초기화
-                bram_we <= 0;           // Bram 쓰기 비활성화
-                bram_ena <= 0;          // Bram 비활성화
+            bram_addr <= 0;         // Bram 주소 초기화
+            bram_we <= 0;           // Bram 쓰기 비활성화
+            bram_ena <= 0;          // Bram 비활성화
 
             // Module Local Variables
             // lfsr <= 10'b1010101010;
@@ -153,20 +168,6 @@ module PulseGenSpeedGam(
 
             mem_count <= 0;
             mem_control_state <= 0;
-
-            // save_data[0] <= 32'd0;
-            // save_data[1] <= 32'd0;
-            // save_data[2] <= 32'd0;
-            // save_data[3] <= 32'd0;
-            // save_data[4] <= 32'd0;
-            // save_data[5] <= 32'd0;
-            // save_data[6] <= 32'd0;
-            // save_data[7] <= 32'd0;
-            // save_data[8] <= 32'd0;
-            // save_data[9] <= 32'd0;
-            // save_data[10] <= 32'd0;
-            // save_data[11] <= 32'd0;
-            // save_data[12] <= 32'd0;
 
         end else begin
             // cps가 변경되었을 경우 재시작
@@ -187,20 +188,6 @@ module PulseGenSpeedGam(
                 mem_count <= 0;
                 mem_gam_count <= 0;     // 감마의 경우 2배
                 mem_control_state <= 0;
-
-                // save_data[0] <= 32'd0;
-                // save_data[1] <= 32'd0;
-                // save_data[2] <= 32'd0;
-                // save_data[3] <= 32'd0;
-                // save_data[4] <= 32'd0;
-                // save_data[5] <= 32'd0;
-                // save_data[6] <= 32'd0;
-                // save_data[7] <= 32'd0;
-                // save_data[8] <= 32'd0;
-                // save_data[9] <= 32'd0;
-                // save_data[10] <= 32'd0;
-                // save_data[11] <= 32'd0;
-                // save_data[12] <= 32'd0;
 
             end else if (count < cps) begin
                 case (mem_control_state)
@@ -276,28 +263,15 @@ module PulseGenSpeedGam(
 
                         lfsr <= {lfsr[9:0], lfsr[10] ^ lfsr[7]}; // 11비트 LFSR로 변경 (이전 변경 값을 가져다 씀)
 
-                        if (mem_gam_count == 1) begin
-                            count <= count + 1;         // CPS 카운트 증가
-                            mem_gam_count <= 0;
-                        end else begin
-                            mem_gam_count <= mem_gam_count + 1;
-                        end
+                        count <= count + 1;         // CPS 카운트 증가
+                        // if (mem_gam_count == 1) begin
+                        //     count <= count + 1;         // CPS 카운트 증가
+                        //     mem_gam_count <= 0;
+                        // end else begin
+                        //     mem_gam_count <= mem_gam_count + 1;
+                        // end
                         
                         mem_control_state <= 0;     // 상태 초기화
-
-                        // save_data[0] <= 32'd0;
-                        // save_data[1] <= 32'd0;
-                        // save_data[2] <= 32'd0;
-                        // save_data[3] <= 32'd0;
-                        // save_data[4] <= 32'd0;
-                        // save_data[5] <= 32'd0;
-                        // save_data[6] <= 32'd0;
-                        // save_data[7] <= 32'd0;
-                        // save_data[8] <= 32'd0;
-                        // save_data[9] <= 32'd0;
-                        // save_data[10] <= 32'd0;
-                        // save_data[11] <= 32'd0;
-                        // save_data[12] <= 32'd0;
                     end
                 endcase
             end
@@ -359,14 +333,14 @@ module tb_PulseGenSpeedGam();
 
         // Test 2: cps = 10 → 10개의 pulse 발생
         cps = 1;
-        #2000;
+        #500;
 
         cps = 0;
         #50
 
         // Test 2: cps = 10 → 10개의 pulse 발생
         cps = 1;
-        #2000;
+        #500;
 
         cps = 0;
         #50
