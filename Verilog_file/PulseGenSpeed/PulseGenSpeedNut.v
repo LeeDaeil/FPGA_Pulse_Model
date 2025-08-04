@@ -471,7 +471,7 @@ module PulseGenSpeedNut(
                     0: begin
                         // 읽기 상태: Bram에서 데이터 읽기
                         // Module Input Section
-                        bram_addr <= mem_count * 4; // 주소 설정 [0]
+                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
                         bram_we <= 0;               // Bram 쓰기 비활성화
                         bram_ena <= 1;              // Bram 활성화
                         // Module Local Variables
@@ -481,7 +481,7 @@ module PulseGenSpeedNut(
 
                     1: begin
                         // 저장 상태: Bram에서 읽은 데이터 저장
-                        bram_addr <= mem_count * 4; // 주소 설정 [1]
+                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
                         bram_we <= 0;               // Bram 쓰기 비활성화
                         bram_ena <= 1;              // Bram 활성화
 
@@ -553,7 +553,7 @@ module PulseGenSpeedNut(
 
                     3: begin
                         // 쓰기 상태: 계산된 데이터를 Bram에 쓰기
-                        bram_addr <= mem_count * 4; // 주소 설정 [1]
+                        bram_addr <= lfsr * 4 + mem_count * 4; // 주소 설정 [0]
                         bram_we <= 1;               // Bram 쓰기 활성화
                         bram_ena <= 1;              // Bram 활성화
                         // Module Local Variables
@@ -571,6 +571,8 @@ module PulseGenSpeedNut(
                         // 완료 상태: 모든 작업 완료 후 초기화
                         bram_we <= 0;               // Bram 쓰기 비활성화
                         bram_ena <= 0;              // Bram 비활성화
+
+                        lfsr <= {lfsr[9:0], lfsr[10] ^ lfsr[7]}; // 11비트 LFSR로 변경 (이전 변경 값을 가져다 씀)
 
                         count <= count + 1;         // CPS 카운트 증가
                         mem_control_state <= 0;     // 상태 초기화
