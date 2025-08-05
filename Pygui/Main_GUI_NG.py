@@ -15,7 +15,7 @@ import random
 
 VAULT_SIZE  = 40    # 볼트 크기
 PLOT_SKIP   = 0     # 그래프 x 포인트 스킵용
-DIRECT_SEND_CPS = True  # True: CPS를 직접 전송, False: CPS를 청크로 변환하여 전송
+DIRECT_SEND_CPS = False  # True: CPS를 직접 전송, False: CPS를 청크로 변환하여 전송
 MODE = 2    # 0: Neutron,   1: Gamma,    2: Neutron+Gamma
 
 
@@ -601,7 +601,7 @@ class MainWidget(QWidget):
             self.x_skip = 0
             self.x_data = []
             self.y_data = []
-            self.plot_widget.setYRange(-5, 300)
+            self.plot_widget.setYRange(-0.01, 0.4)
             self.plot_curve = self.plot_widget.plot([], [], pen=pg.mkPen(color='white', width=2))
             
             # 4. 패널 내부 Spacer 추가
@@ -734,6 +734,7 @@ class MainWidget(QWidget):
             
             # raw_val_0 = segment[0]
             raw_val_1 = struct.unpack('<f', segment)[0]
+            raw_val_1 = raw_val_1 * 1e-3
             # print(f"[{i // PACKET_SIZE}] raw_val_0: {raw_val_0}, raw_val_1: {raw_val_1:.6f}")
             
             if PLOT_SKIP == 0:
@@ -749,7 +750,7 @@ class MainWidget(QWidget):
             self.x_skip += 1 # skip용.
             
         # 일정 길이 이상 시 자르기 (예: 2048개 유지)
-        MAX_POINTS = 2048 * 10 # 4.096 ms 윈도우만 표기.
+        MAX_POINTS = 2048 * 100 # 4.096 ms 윈도우만 표기.
         if len(self.x_data) > MAX_POINTS:
             self.x_data = self.x_data[-MAX_POINTS:]
             self.y_data = self.y_data[-MAX_POINTS:]

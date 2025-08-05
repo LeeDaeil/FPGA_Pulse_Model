@@ -588,7 +588,7 @@ class MainWidget(QWidget):
             self.x_skip = 0
             self.x_data = []
             self.y_data = []
-            self.plot_widget.setYRange(-5, 300)
+            self.plot_widget.setYRange(-0.1, 2)
             self.plot_curve = self.plot_widget.plot([], [], pen=pg.mkPen(color='white', width=2))
             
             # 4. 패널 내부 Spacer 추가
@@ -721,6 +721,7 @@ class MainWidget(QWidget):
             
             # raw_val_0 = segment[0]
             raw_val_1 = struct.unpack('<f', segment)[0]
+            raw_val_1 = raw_val_1 * 1e-3
             # print(f"[{i // PACKET_SIZE}] raw_val_0: {raw_val_0}, raw_val_1: {raw_val_1:.6f}")
             
             if PLOT_SKIP == 0:
