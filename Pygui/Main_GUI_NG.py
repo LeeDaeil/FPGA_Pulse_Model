@@ -16,7 +16,7 @@ import random
 VAULT_SIZE  = 40    # 볼트 크기
 PLOT_SKIP   = 0     # 그래프 x 포인트 스킵용
 DIRECT_SEND_CPS = True  # True: CPS를 직접 전송, False: CPS를 청크로 변환하여 전송
-MODE = 0    # 0: Neutron,   1: Gamma,    2: Neutron+Gamma
+MODE = 2    # 0: Neutron,   1: Gamma,    2: Neutron+Gamma
 
 
 class CustomPushButton(QPushButton):
@@ -228,14 +228,26 @@ class TCPClient(QThread):
                         else:
                             # 펄스 신호 대기열에서 하나씩 꺼내서 전송
                             cps = self.pulse_time_chunk_block.pop(0)
-                    
+                            
+                    if not DIRECT_SEND_CPS:
+                        cps1 = int(cps/2)
+                        cps2 = int(cps/2) if cps % 2 == 0 else int(cps/2) + 1
+                    else:
+                        cps1, cps2 = cps, cps
+
                     # 2. Send cps
-                    self.client_socket.sendall(str(cps).encode())
+                    if MODE == 0: # Neutron
+                        self.client_socket.sendall(f'{cps1},{cps2},{0},{0}'.encode())
+                    elif MODE == 1:  # Gamma
+                        self.client_socket.sendall(f'{0},{0},{cps1},{cps2}'.encode())
+                    elif MODE == 2:  # Neutron+Gamma
+                        self.client_socket.sendall(f'{cps1},{cps2},{cps1},{cps2}'.encode())
+
                     data = self.client_socket.recv(8192)
                     
-                    # print(f"One command sent: {cps}, Time taken: {time.time() - start_time:.6f} seconds")
+                    # print(f"One command sent: {cps1}, {cps2}, Time taken: {time.time() - start_time:.6f} seconds")
                     
-                    time.sleep(0.1)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
+                    time.sleep(0.01)  # 1초 간격으로 명령 전송 ! 그래프 업데이트 하는 시간 고려해야함.
                     
                     if data:
                         # print(f"Data Len : {len(data)}")
